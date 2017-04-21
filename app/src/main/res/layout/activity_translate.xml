@@ -9,8 +9,32 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="mobi.ja.ru.translator.TranslateActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <Button
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:text=" ... "
+        android:id="@+id/langChangeButton"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+         />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/phrase"
+        android:layout_below="@+id/langChangeButton"
+        android:textAlignment="center"
+        android:enabled="false"
+     />
+
+    <WebView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/translated"
+        android:layout_below="@+id/phrase"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+
 </RelativeLayout>
