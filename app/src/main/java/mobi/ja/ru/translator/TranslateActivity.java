@@ -34,6 +34,7 @@ public class TranslateActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         changeLangButton.setText(Config.getConfig().getLangNameFrom() + " -> " + Config.getConfig().getLangNameTo());
+        makeTranslation();
         super.onResume();
     }
 
@@ -49,7 +50,7 @@ public class TranslateActivity extends AppCompatActivity {
      * @param text - html-контент для установки
      */
     public void setTranslatedText(String text) {
-        translated.loadData(text, "text/html", "auto");
+        translated.loadDataWithBaseURL(null, text, "text/html", "UTF-8", null);
     }
 
     /**
@@ -62,6 +63,7 @@ public class TranslateActivity extends AppCompatActivity {
 
         phrase.setEnabled(false);
         initListeners();
+        setTranslatedText("Что то русское");
     }
 
     private void initListeners() {
@@ -90,6 +92,13 @@ public class TranslateActivity extends AppCompatActivity {
         this.changeLangButton = changeLangButton;
     }
 
+    public void makeTranslation(){
+        if(phrase.getText().toString().contentEquals(""))
+            setTranslatedText("");
+        else
+            YandexRequests.translate(phrase.getText().toString());
+    }
+
     class PhraseWatcher implements TextWatcher {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -101,8 +110,8 @@ public class TranslateActivity extends AppCompatActivity {
 
         @Override
         public void afterTextChanged(Editable s) {
-            Log.d("ssss", s.toString());
-            YandexRequests.translate(s.toString());
+
+           makeTranslation();
         }
 
     }

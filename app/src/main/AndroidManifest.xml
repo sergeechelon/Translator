@@ -16,9 +16,10 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+
         </activity>
-        <activity android:name="mobi.ru.ja.ChangeLangActivity" />
-        <activity android:name=".ChangeLangActivity"></activity>
+        <activity android:name=".ChangeLangActivity" />
     </application>
 
 </manifest>

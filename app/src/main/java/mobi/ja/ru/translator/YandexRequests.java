@@ -2,6 +2,7 @@ package mobi.ja.ru.translator;
 
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -22,7 +23,11 @@ public class YandexRequests {
 
     public static final String LANGUAGE_QUERY = BASE_URL + "getLangs?" + KEY + "&ui=ru";
 
+    // TODO 4Delete
     public static final String DETECT_LANGUAGE_QUERY = BASE_URL + "detect?"+ KEY + "&text=%s";
+
+    public static final String TRANSLATE_QUERY = BASE_URL + "translate?" + KEY
+            + "&text=%s&lang=%s";
 
     public static void loadLanguages() {
         new Thread(new Runnable() {
@@ -59,23 +64,57 @@ public class YandexRequests {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d("!!!", identifyLanguage(phrase));
+                try {
+                    Config config = Config.getConfig();
+                    String url = String.format(TRANSLATE_QUERY,
+                            URLEncoder.encode(phrase, "UTF-8"), config.getLangTo());
+                    Log.e("URL", url);
+                    String response = loadStringFromUrl(url);
+
+                    Log.e("Resp", response);
+
+                    JSONObject jsonResponse = new JSONObject(response);
+
+                    String dir = jsonResponse.getString("lang");
+
+                    config.setLangFrom(dir.substring(0,2));
+                    config.setLangTo(dir.substring(3, 5));
+                    JSONArray translated = jsonResponse.getJSONArray("text");
+
+                    final StringBuilder translatedString = new StringBuilder();
+                    translatedString.append("<meta charset=\"UTF-16\"><body><p>");
+                    for(int i=0 ;i<translated.length(); i++)
+                        translatedString.append(
+                                translated.getString(i)).append("<br>");
+                    translatedString.append("</p></body>");
+
+                    TranslateActivity.getInstance().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TranslateActivity.getInstance().setTranslatedText(translatedString.toString());
+                        }
+                    });
+                } catch (IOException | JSONException e) {
+                    Utils.MessageDialog("Ошибка связи", "Ошибка получения данных с сайта yandex",
+                            TranslateActivity.getInstance(), Utils.nullRunnable);
+                }
             }
         }).start();
     }
 
+    // TODO может быть, и не нужно
     protected static String identifyLanguage(String phrase) {
         try {
             String url = String.format(DETECT_LANGUAGE_QUERY,
                     URLEncoder.encode(phrase, "UTF-8"));
-            Log.d("URL", url);
             String response = loadStringFromUrl(url);
-            Log.d("Response", response);
-        } catch (IOException e) {
+            JSONObject jsonResponse = new JSONObject(response);
+            return jsonResponse.getString("lang");
+        } catch (IOException | JSONException e) {
             Utils.MessageDialog("Ошибка связи", "Ошибка получения данных с сайта yandex",
                     TranslateActivity.getInstance(), Utils.nullRunnable);
         }
-        return "qq";
+        return "en";
     }
 
     /**
