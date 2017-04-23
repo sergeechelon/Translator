@@ -57,6 +57,15 @@ public class Utils {
         return buf.toString();
     }
 
+    public static int phraseHash(String phrase) {
+        return trimPhrase(phrase).hashCode();
+    }
+
+    public static String trimPhrase(String phrase) {
+        phrase = phrase.replaceAll(" +", " ");
+        return phrase.trim();
+    }
+
     /**
      * Runnable, заверщающий программу
      */

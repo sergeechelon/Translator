@@ -14,13 +14,26 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="100px"
-        android:layout_below="@+id/translated"
         android:layout_alignParentBottom="true">
 
-        <ImageButton
-            android:layout_width="match_parent"
+        <Button
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:src="@drawable/favorites"/>
+            android:layout_weight="30"
+            android:text="В избранное"
+            android:id="@+id/tofavoriteBtn"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="30"
+            android:text = "история"
+            android:id="@+id/historyBtn"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="30"
+            android:text = "настройки"
+            android:id="@+id/optionsBtn"/>
     </LinearLayout>
 
 
@@ -29,9 +42,6 @@
         android:layout_height="wrap_content"
         android:text=" ... "
         android:id="@+id/langChangeButton"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
          />
 
     <EditText
@@ -47,8 +57,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/translated"
-        android:layout_below="@+id/phrase"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        />
 
 </LinearLayout>

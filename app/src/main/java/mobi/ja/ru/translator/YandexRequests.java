@@ -11,8 +11,15 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.sql.SQLException;
+import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import mobi.ja.ru.translator.db.DbFactory;
+import mobi.ja.ru.translator.db.DbHelper;
+import mobi.ja.ru.translator.db.PhraseDAO;
+import mobi.ja.ru.translator.db.PhraseWithTranslation;
 
 /**
  * Created by Serg on 21.04.2017.
@@ -29,6 +36,11 @@ public class YandexRequests {
     public static final String TRANSLATE_QUERY = BASE_URL + "translate?" + KEY
             + "&text=%s&lang=%s";
 
+    private static boolean translationActive = false;
+    public static boolean isTranslationActive() {return translationActive;}
+    public static void setTranslationActive(boolean translationActive) {
+        YandexRequests.translationActive = translationActive;}
+
     public static void loadLanguages() {
         new Thread(new Runnable() {
             @Override
@@ -37,8 +49,8 @@ public class YandexRequests {
                     String response = loadStringFromUrl(LANGUAGE_QUERY);
                     JSONObject langs = new JSONObject(response);
 
-                    Config.getConfig().setDirs(langs.getJSONArray("dirs"));
-                    Config.getConfig().setLangs(langs.getJSONObject("langs"));
+                    Config.getConfig().initDirs(langs.getJSONArray("dirs"));
+                    Config.getConfig().initLangs(langs.getJSONObject("langs"));
 
                     TranslateActivity.getInstance().runOnUiThread(new Runnable() {
                         @Override
@@ -65,39 +77,57 @@ public class YandexRequests {
             @Override
             public void run() {
                 try {
+                    translationActive = true;
                     Config config = Config.getConfig();
-                    String url = String.format(TRANSLATE_QUERY,
-                            URLEncoder.encode(phrase, "UTF-8"), config.getLangTo());
-                    Log.e("URL", url);
-                    String response = loadStringFromUrl(url);
+                    PhraseDAO phraseDAO = DbFactory.getHelper().getPhraseDAO();
+                    String langFrom, langTo = Config.getConfig().getLangFrom();
+                    PhraseWithTranslation cachedPhrase = phraseDAO.queryForPhraseAndLangTo(phrase, langTo);
+                    final String translatedString;
+                    if(cachedPhrase == null) {
+                        String url = String.format(TRANSLATE_QUERY,
+                                URLEncoder.encode(phrase, "UTF-8"), config.getLangTo());
+                        String response = loadStringFromUrl(url);
+                        JSONObject jsonResponse = new JSONObject(response);
+                        String dir = jsonResponse.getString("lang");
+                        langFrom = dir.substring(0, 2);
+                        JSONArray translated = jsonResponse.getJSONArray("text");
+                        StringBuilder translatedBuilder = new StringBuilder();
+                        for(int i=0 ;i<translated.length(); i++)
+                            translatedBuilder.append(
+                                    translated.getString(i)).append("\n");
+                        translatedString = translatedBuilder.toString();
+                        cachedPhrase = new PhraseWithTranslation(phrase, translatedString, langFrom, langTo);
+                        phraseDAO.create(cachedPhrase);
+                    } else {
+                        Log.e("Found", cachedPhrase.getPhrase() + " .... " + cachedPhrase.getLangTo());
+                        langFrom = cachedPhrase.getLangFrom();
+                        langTo = cachedPhrase.getLangTo();
+                        translatedString = cachedPhrase.getTranslatedText();
+                    }
 
-                    Log.e("Resp", response);
-
-                    JSONObject jsonResponse = new JSONObject(response);
-
-                    String dir = jsonResponse.getString("lang");
-
-                    config.setLangFrom(dir.substring(0,2));
-                    config.setLangTo(dir.substring(3, 5));
-                    JSONArray translated = jsonResponse.getJSONArray("text");
-
-                    final StringBuilder translatedString = new StringBuilder();
-                    translatedString.append("<meta charset=\"UTF-16\"><body><p>");
-                    for(int i=0 ;i<translated.length(); i++)
-                        translatedString.append(
-                                translated.getString(i)).append("<br>");
-                    translatedString.append("</p></body>");
+                    config.setLangFrom(langFrom);
+                    config.setLangTo(langTo);
 
                     TranslateActivity.getInstance().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             TranslateActivity.getInstance().setTranslatedText(translatedString.toString());
+                            TranslateActivity.getInstance().setTranslationFinished(true);
                         }
                     });
                 } catch (IOException | JSONException e) {
                     Utils.MessageDialog("Ошибка связи", "Ошибка получения данных с сайта yandex",
                             TranslateActivity.getInstance(), Utils.nullRunnable);
+                } catch (SQLException e) {
+                    Utils.MessageDialog("Ошибка данных", "Ошибка при работе с внутренней БД приложения",
+                            TranslateActivity.getInstance(), Utils.nullRunnable);
                 }
+                /*
+                catch(RuntimeException ex) {
+                    Utils.MessageDialog("Ошибка", "Ошибка времени выполнения",
+                            TranslateActivity.getInstance(), Utils.nullRunnable);
+                }*/
+                setTranslationActive(false);
             }
         }).start();
     }
