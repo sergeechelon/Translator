@@ -3,6 +3,7 @@ package mobi.ja.ru.translator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.support.annotation.Nullable;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,10 +15,11 @@ import java.io.IOException;
  */
 public class Utils {
     /**
-     * Выводим типа MessageBox
+     * Выводим MessageBox
      * @param title - заголовок
      * @param message - сообщение
      * @param activity - Activity, на базе которой будет диалог
+     * @param afterPush - колбэк после закрытия диалога
      */
     public static void MessageDialog(final String title, final String message,  final Activity activity,
                                      final Runnable afterPush) {
@@ -32,13 +34,51 @@ public class Utils {
                                                .setNegativeButton("OK",
                                                        new DialogInterface.OnClickListener() {
                                                            public void onClick(DialogInterface dialog, int id) {
-                                                                dialog.cancel();
-                                                                afterPush.run();
+                                                               dialog.cancel();
+                                                               if(afterPush != null)
+                                                                    afterPush.run();
                                                            }
                                                        }).create();
                                        dialog.show();
                                    }
                                });
+    }
+
+    /**
+     * Выводим  MessageBox c кнопками Ok, Cancel
+     * @param title - заголовок
+     * @param message - сообщение
+     * @param activity - Activity, на базе которой будет диалог
+     *
+     */
+    public static void OkCancelDialog(final String title, final String message,  final Activity activity,
+                                     final Runnable okCallback) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                AlertDialog dialog = builder.setTitle(title)
+                        .setMessage(message)
+                        .setIcon(R.mipmap.ic_launcher)
+                        .setCancelable(false)
+                        .setPositiveButton("OK",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        dialog.cancel();
+                                        if (okCallback != null)
+                                            okCallback.run();
+                                    }
+                                })
+                        .setNegativeButton("Cancel",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        dialog.cancel();
+                                    }
+                                })
+                        .create();
+                dialog.show();
+            }
+        });
     }
 
     /**

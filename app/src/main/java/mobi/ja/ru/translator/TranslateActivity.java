@@ -11,14 +11,23 @@ import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.sql.SQLException;
 
+import mobi.ja.ru.translator.db.DbFactory;
+import mobi.ja.ru.translator.db.PhraseDAO;
+import mobi.ja.ru.translator.db.PhraseWithTranslation;
+
+/**
+ * Основная activity для перевода
+ */
 public class TranslateActivity extends AppCompatActivity {
     private static final long WAIT_INPUT = 1500;
 
     private WebView translated;
     private TextView phrase;
-    private Button changeLangButton, toFavoriteButton;
+    private Button changeLangButton, toFavoriteButton, favoriteButton, historyButton;
 
     private boolean translationFinished = false;
 
@@ -36,7 +45,7 @@ public class TranslateActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        changeLangButton.setText(Config.getConfig().getLangNameFrom() + " -> " + Config.getConfig().getLangNameTo());
+        updateTranslateButtonText();
         makeTranslation();
         super.onResume();
     }
@@ -55,7 +64,11 @@ public class TranslateActivity extends AppCompatActivity {
     public void setTranslatedText(String text) {
         if(text.contentEquals(""))
             toFavoriteButton.setEnabled(false);
-        translated.loadDataWithBaseURL(null, text.replaceAll("\n", "<br>"), "text/html", "UTF-8", null);
+        translated.loadDataWithBaseURL(null, "<big>" + text.replaceAll("\n", "<br>") + "</big>", "text/html", "UTF-8", null);
+    }
+
+    public void setPhrase(String text) {
+        phrase.setText(text);
     }
 
     /**
@@ -66,6 +79,8 @@ public class TranslateActivity extends AppCompatActivity {
         phrase = (TextView) findViewById(R.id.phrase);
         changeLangButton = (Button) findViewById(R.id.langChangeButton);
         toFavoriteButton = (Button) findViewById(R.id.tofavoriteBtn);
+        favoriteButton = (Button) findViewById(R.id.favoriteBtn);
+        historyButton = (Button) findViewById(R.id.historyBtn);
 
         phrase.setEnabled(false);
         initListeners();
@@ -85,10 +100,42 @@ public class TranslateActivity extends AppCompatActivity {
                 addCurrentToFavorites();
             }
         });
+        favoriteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(instance, ListPhrasesActivity.class);
+                intent.putExtra("workType", ListPhrasesActivity.LISTTYPE_FAVORITES);
+                startActivity(intent);
+            }
+        });
+        historyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(instance, ListPhrasesActivity.class);
+                intent.putExtra("workType", ListPhrasesActivity.LISTTYPE_HISTORY);
+                startActivity(intent);
+            }
+        });
     }
 
     private void addCurrentToFavorites() {
 
+        try {
+            PhraseDAO phraseDAO = DbFactory.getHelper().getPhraseDAO();
+            PhraseWithTranslation cachedPhrase = phraseDAO.queryForPhraseAndLangTo(
+                    phrase.getText().toString(), Config.getConfig().getLangTo());
+            if(cachedPhrase == null)
+                Toast.makeText(this, "Фраза еще не переведена", Toast.LENGTH_SHORT).show();
+            else {
+                cachedPhrase.setInFavorites(true);
+                phraseDAO.update(cachedPhrase);
+                Utils.MessageDialog("Добавлено",
+                        "Перевод \"" + cachedPhrase.getPhrase() + "\" добавлен в избранное",
+                        this, null);
+            }
+        } catch (SQLException e) {
+            Toast.makeText(this, "Ошибка при запросе к внутренней БД", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void enable() {
@@ -114,6 +161,10 @@ public class TranslateActivity extends AppCompatActivity {
             setTranslatedText("");
         else
             YandexRequests.translate(phrase.getText().toString());
+    }
+
+    public void updateTranslateButtonText() {
+        changeLangButton.setText(Config.getConfig().getLangNameFrom() + " -> " + Config.getConfig().getLangNameTo());
     }
 
     class PhraseWatcher implements TextWatcher {

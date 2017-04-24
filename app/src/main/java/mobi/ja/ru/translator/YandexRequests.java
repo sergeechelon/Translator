@@ -22,6 +22,7 @@ import mobi.ja.ru.translator.db.PhraseDAO;
 import mobi.ja.ru.translator.db.PhraseWithTranslation;
 
 /**
+ * Класс со статическими методами, содержащими запросы к yandex
  * Created by Serg on 21.04.2017.
  */
 public class YandexRequests {
@@ -80,7 +81,7 @@ public class YandexRequests {
                     translationActive = true;
                     Config config = Config.getConfig();
                     PhraseDAO phraseDAO = DbFactory.getHelper().getPhraseDAO();
-                    String langFrom, langTo = Config.getConfig().getLangFrom();
+                    String langFrom, langTo = Config.getConfig().getLangTo();
                     PhraseWithTranslation cachedPhrase = phraseDAO.queryForPhraseAndLangTo(phrase, langTo);
                     final String translatedString;
                     if(cachedPhrase == null) {
@@ -113,6 +114,7 @@ public class YandexRequests {
                         public void run() {
                             TranslateActivity.getInstance().setTranslatedText(translatedString.toString());
                             TranslateActivity.getInstance().setTranslationFinished(true);
+                            TranslateActivity.getInstance().updateTranslateButtonText();
                         }
                     });
                 } catch (IOException | JSONException e) {

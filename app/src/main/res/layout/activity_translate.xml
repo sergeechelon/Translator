@@ -13,7 +13,7 @@
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="100px"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true">
 
         <Button
@@ -26,14 +26,14 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="30"
-            android:text = "история"
-            android:id="@+id/historyBtn"/>
+            android:text = "Избранное"
+            android:id="@+id/favoriteBtn"/>
         <Button
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="30"
-            android:text = "настройки"
-            android:id="@+id/optionsBtn"/>
+            android:text = "История"
+            android:id="@+id/historyBtn"/>
     </LinearLayout>
 
 

@@ -14,6 +14,9 @@ import org.json.JSONObject;
 
 import java.util.Map;
 
+/**
+ * activity для выбора языка, на который переводить
+ */
 public class ChangeLangActivity extends AppCompatActivity {
     private ChangeLangActivity instance;
 
@@ -34,7 +37,7 @@ public class ChangeLangActivity extends AppCompatActivity {
         final String[] langsArray = langs.values().toArray(new String[0]);
         final String[] shortArray = langs.keySet().toArray(new String[0]);
 
-        // лайфхак, переносящий русский и английский языки в начало списка
+        // "лайфхак", переносящий русский и английский языки в начало списка
         int engPos = -1, ruPos = -1;
         for(int i=0; i<langs.size(); i++) {
             if(shortArray[i].contentEquals("en"))
@@ -46,6 +49,7 @@ public class ChangeLangActivity extends AppCompatActivity {
         xchg(shortArray, 0, ruPos);
         xchg(langsArray, 1, engPos);
         xchg(shortArray, 1, engPos);
+        // </лайфхак>
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, langsArray);

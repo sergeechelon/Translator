@@ -22,6 +22,8 @@ public class PhraseWithTranslation {
     private String translatedText;
     @DatabaseField
     private boolean inFavorites;
+    @DatabaseField
+    private boolean inHistory;
 
     public PhraseWithTranslation(String phrase, String translation, String langFrom, String langTo) {
         this.phrase = Utils.trimPhrase(phrase);
@@ -29,6 +31,8 @@ public class PhraseWithTranslation {
         this.inFavorites = false;
         this.langFrom = langFrom;
         this.langTo = langTo;
+        this.inFavorites = false;
+        this.inHistory = true;
     }
 
     public PhraseWithTranslation() {
@@ -37,6 +41,8 @@ public class PhraseWithTranslation {
         this.inFavorites = false;
         this.langFrom = "en";
         this.langTo = "en";
+        this.inFavorites = false;
+        this.inHistory = true;
     }
 
     public boolean isInFavorites() {
@@ -76,6 +82,14 @@ public class PhraseWithTranslation {
 
     public void setLangFrom(String langFrom) {
         this.langFrom = langFrom;
+    }
+
+    public boolean isInHistory() {
+        return inHistory;
+    }
+
+    public void setInHistory(boolean inHistory) {
+        this.inHistory = inHistory;
     }
 
 }

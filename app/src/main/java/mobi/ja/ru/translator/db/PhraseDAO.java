@@ -24,4 +24,5 @@ public class PhraseDAO extends BaseDaoImpl<PhraseWithTranslation, Integer> {
             return null;
         return phraseList.get(0);
     }
+
 }
