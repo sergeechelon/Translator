@@ -17,26 +17,35 @@ import java.util.Map;
 import mobi.ja.ru.translator.db.DbFactory;
 
 /**
- * синглтон с конфигурацией
- * Created by Serg on 21.04.2017.
+ * Cинглтон с настройками. Содержит Map-соответствие между краткими и полными названиями языков,
+ * направления переводов, текущий исходный язык и текущий язык для перевода.
  */
 @DatabaseTable
 public class Config {
     transient private static Config instance = null;
     @DatabaseField(generatedId = true)
     private int id;
+    /**
+     * список направлений перевода
+     */
     @DatabaseField(dataType = DataType.SERIALIZABLE)
     private ArrayList<String> dirs = null;
+    /**
+     * мэп между сокращенными и полными названиями языков
+     */
     @DatabaseField(dataType = DataType.SERIALIZABLE)
     private HashMap<String, String> langs = null;
-
+    /**
+     * текущий язык, с которого осуществляется перевод. Определяется автоматически.
+     */
     @DatabaseField
     private String langFrom = "en";
+    /**
+     * текущий язык, на который осуществляется перевод. Определяется пользователем.
+     */
     @DatabaseField
     private String langTo = "en";
 
-    //private
-    // потому что ORMLite, видите ли, нужен конструктор без аргументов
     public Config(){
     }
 
@@ -102,17 +111,29 @@ public class Config {
         this.langTo = langTo;
     }
 
+    /**
+     * получить полное название языка, на который переводить
+     * @return
+     */
     public String getLangNameTo() {
         if(langs == null)
             return "English";
         return langs.get(langTo);
     }
+    /**
+     * получить полное название языка, с которого переводить
+     * @return
+     */
 
     public String getLangNameFrom() {
         if(langs == null)
             return "English";
         return langs.get(langFrom);
     }
+
+    /**
+     * инициализация по запросу на /getLangs
+     */
 
     public void initDirs(JSONArray dirs) throws JSONException {
         int len = dirs.length();
@@ -121,6 +142,9 @@ public class Config {
             this.dirs.add(dirs.getString(i));
     }
 
+    /**
+     * инициализация по запросу на /getLangs
+     */
     public void initLangs(JSONObject langs) throws JSONException {
         int len = langs.length();
         this.langs = new HashMap<>(len);

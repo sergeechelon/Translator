@@ -13,12 +13,9 @@ import java.sql.SQLException;
 import mobi.ja.ru.translator.Config;
 
 /**
- * Created by Serg on 23.04.2017.
+ * класс, реализующий доступ к внутренней БД. Используется библиотека ORMLite.
  */
 public class DbHelper extends OrmLiteSqliteOpenHelper {
-
-    private static final String TAG = DbHelper.class.getSimpleName();
-
     private static final String DATABASE_NAME ="translator.db";
 
     private static final int DATABASE_VERSION = 1;
@@ -38,7 +35,7 @@ public class DbHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTable(connectionSource, Config.class);
         }
         catch (SQLException e){
-            Log.e(TAG, "error creating DB " + DATABASE_NAME);
+            Log.e("БД", "Ошибка создания БД" + DATABASE_NAME);
             throw new RuntimeException(e);
         }
     }

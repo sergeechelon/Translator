@@ -20,7 +20,15 @@ import mobi.ja.ru.translator.db.PhraseDAO;
 import mobi.ja.ru.translator.db.PhraseWithTranslation;
 
 /**
- * Основная activity для перевода
+ * Основная activity для перевода. Содержит поле ввода, которое чере WAIT_INPUT миллисекунд
+ * без изменения ввода осуществляет переводтекста.Исходный язык определяется автоматически
+ * в процессе перевода (сорри, на более пространный функционал просто не хватило времени),
+ * язык назначения берется из настроек (синглтон Config).
+ * Также присутствуют 4 кнопки:
+ * @changeLangButton - вызывает активити изменения языка перевода
+ * @toFavoriteButton - добавляет текущий перевод в избранное
+ * @favoriteButton - вызывает активити со списком избранного
+ * @historyButton - вызывает активити со списком истории переводов
  */
 public class TranslateActivity extends AppCompatActivity {
     private static final long WAIT_INPUT = 1500;
@@ -67,6 +75,10 @@ public class TranslateActivity extends AppCompatActivity {
         translated.loadDataWithBaseURL(null, "<big>" + text.replaceAll("\n", "<br>") + "</big>", "text/html", "UTF-8", null);
     }
 
+    /**
+     * изменить фразу для перевода в UI
+     * @param text -фраза для установки
+     */
     public void setPhrase(String text) {
         phrase.setText(text);
     }
@@ -86,6 +98,9 @@ public class TranslateActivity extends AppCompatActivity {
         initListeners();
     }
 
+    /**
+     * инициализация обработчиков событий
+     */
     private void initListeners() {
         changeLangButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -118,6 +133,9 @@ public class TranslateActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * добавить введенную и переведенную фразу в избранное
+     */
     private void addCurrentToFavorites() {
 
         try {
@@ -146,16 +164,18 @@ public class TranslateActivity extends AppCompatActivity {
         return instance;
     }
 
-
-    public boolean isTranslationFinished() {
-        return translationFinished;
-    }
-
+    /**
+     * установить флаг окончания перевода и заодно включить кнопку "добавить в избранное"
+      * @param translationFinished
+     */
     public void setTranslationFinished(boolean translationFinished) {
         this.translationFinished = translationFinished;
         toFavoriteButton.setEnabled(translationFinished);
     }
 
+    /**
+     * запустить перевод
+     */
     public void makeTranslation(){
         if(phrase.getText().toString().contentEquals(""))
             setTranslatedText("");
@@ -167,6 +187,9 @@ public class TranslateActivity extends AppCompatActivity {
         changeLangButton.setText(Config.getConfig().getLangNameFrom() + " -> " + Config.getConfig().getLangNameTo());
     }
 
+    /**
+     * обработчик TextEdit для событий изменения ввода
+     */
     class PhraseWatcher implements TextWatcher {
         Handler translationHandler = new Handler();
         Runnable translationTask = new Runnable() {
@@ -176,15 +199,17 @@ public class TranslateActivity extends AppCompatActivity {
             }
         };
         @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-        }
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
         @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-        }
+        public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
         @Override
         public void afterTextChanged(Editable s) {
+            /**
+             * Запуск обработки ввода с задержкой @WAIT_INPUT, чтобы с вводом очередной
+             * промежуточной буквы не вызывался вызов перевода
+             */
             setTranslationFinished(false);
             translationHandler.removeCallbacks(translationTask);
             if(!YandexRequests.isTranslationActive())

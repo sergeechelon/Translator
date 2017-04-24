@@ -6,7 +6,11 @@ import com.j256.ormlite.table.DatabaseTable;
 import mobi.ja.ru.translator.Utils;
 
 /**
- * Created by Serg on 23.04.2017.
+ * Единственный класс, маппирующийся в БД. Содержит фразу для перевода, ее перевод,
+ * направление перевода, а также нахождение в истории и избранном.
+ * Таблица с этими объектами по совместительству является кэшем, и если в ней находится
+ * конкретная фраза с конкретным направлением, то запрос к серверу не осуществляется,
+ * а просто выводится результат.
  */
 @DatabaseTable(tableName = "PhraseWithTranslation")
 public class PhraseWithTranslation {

@@ -4,9 +4,6 @@ import android.content.Context;
 
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 
-/**
- * Created by Serg on 23.04.2017.
- */
 public class DbFactory {
 
         private static DbHelper databaseHelper;

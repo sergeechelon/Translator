@@ -23,16 +23,12 @@ import mobi.ja.ru.translator.db.PhraseWithTranslation;
 
 /**
  * Класс со статическими методами, содержащими запросы к yandex
- * Created by Serg on 21.04.2017.
  */
 public class YandexRequests {
     public static final String KEY = "key=trnsl.1.1.20170421T125127Z.8a4e09e245ab7cb6.9852a28c47a73fc84475ef04a843f1f12fdd89cf";
     public static final String BASE_URL = "https://translate.yandex.net/api/v1.5/tr.json/";
 
     public static final String LANGUAGE_QUERY = BASE_URL + "getLangs?" + KEY + "&ui=ru";
-
-    // TODO 4Delete
-    public static final String DETECT_LANGUAGE_QUERY = BASE_URL + "detect?"+ KEY + "&text=%s";
 
     public static final String TRANSLATE_QUERY = BASE_URL + "translate?" + KEY
             + "&text=%s&lang=%s";
@@ -42,6 +38,9 @@ public class YandexRequests {
     public static void setTranslationActive(boolean translationActive) {
         YandexRequests.translationActive = translationActive;}
 
+    /**
+     * запрос на получение списка языков и направлений перевода
+     */
     public static void loadLanguages() {
         new Thread(new Runnable() {
             @Override
@@ -56,7 +55,6 @@ public class YandexRequests {
                     TranslateActivity.getInstance().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Log.d("Ok", "Languages loaded");
                             TranslateActivity.getInstance().enable();
                         }
                     });
@@ -73,6 +71,11 @@ public class YandexRequests {
         }).start();
     }
 
+    /**
+     * Запрос перевода текста. Перед запросом ищет такую же фразу в кэше (находится в локальной БД),
+     * и если находит, запрос не делает.
+     * @param phrase - фраза для перевода
+     */
     public static void translate(final String phrase) {
         new Thread(new Runnable() {
             @Override
@@ -82,22 +85,31 @@ public class YandexRequests {
                     Config config = Config.getConfig();
                     PhraseDAO phraseDAO = DbFactory.getHelper().getPhraseDAO();
                     String langFrom, langTo = Config.getConfig().getLangTo();
+
+                    // ищем в кэше соответствующую фразу и направление перевода
                     PhraseWithTranslation cachedPhrase = phraseDAO.queryForPhraseAndLangTo(phrase, langTo);
                     final String translatedString;
                     if(cachedPhrase == null) {
+                        // Если в кэше отсутствует, делаем запрос
                         String url = String.format(TRANSLATE_QUERY,
                                 URLEncoder.encode(phrase, "UTF-8"), config.getLangTo());
                         String response = loadStringFromUrl(url);
+                        // и парсим его
+
                         JSONObject jsonResponse = new JSONObject(response);
                         String dir = jsonResponse.getString("lang");
                         langFrom = dir.substring(0, 2);
                         JSONArray translated = jsonResponse.getJSONArray("text");
+
+                        // формируем ответ, если он не из одного варианта
                         StringBuilder translatedBuilder = new StringBuilder();
                         for(int i=0 ;i<translated.length(); i++)
                             translatedBuilder.append(
                                     translated.getString(i)).append("\n");
                         translatedString = translatedBuilder.toString();
                         cachedPhrase = new PhraseWithTranslation(phrase, translatedString, langFrom, langTo);
+
+                        // результат сохраняем в кэше
                         phraseDAO.create(cachedPhrase);
                     } else {
                         Log.e("Found", cachedPhrase.getPhrase() + " .... " + cachedPhrase.getLangTo());
@@ -106,9 +118,11 @@ public class YandexRequests {
                         translatedString = cachedPhrase.getTranslatedText();
                     }
 
+                    // обновляем направление перевода в конфигурации
                     config.setLangFrom(langFrom);
                     config.setLangTo(langTo);
 
+                    // выводим результат в активити перевода
                     TranslateActivity.getInstance().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -118,35 +132,26 @@ public class YandexRequests {
                         }
                     });
                 } catch (IOException | JSONException e) {
-                    Utils.MessageDialog("Ошибка связи", "Ошибка получения данных с сайта yandex",
-                            TranslateActivity.getInstance(), Utils.nullRunnable);
+                    String errMsg;
+                    if(e.getMessage().contentEquals("404"))
+                        errMsg = "Превышено суточное ограничение на объем переведенного текста";
+                    else if(e.getMessage().contentEquals("413"))
+                        errMsg = "Превышен максимально допустимый размер текста";
+                    else if(e.getMessage().contentEquals("422"))
+                        errMsg = "Текст не может быть переведен";
+                    else if(e.getMessage().contentEquals("501"))
+                        errMsg = "Заданное направление перевода не поддерживается";
+                    else
+                        errMsg = "Ошибка получения данных с сайта yandex";
+                    Utils.MessageDialog("Ошибка", errMsg,
+                            TranslateActivity.getInstance(), null);
                 } catch (SQLException e) {
-                    Utils.MessageDialog("Ошибка данных", "Ошибка при работе с внутренней БД приложения",
-                            TranslateActivity.getInstance(), Utils.nullRunnable);
+                    Log.e("SQL error", "Ошибка при работе с внутренней БД приложения при переводе фразы");
                 }
-                /*
-                catch(RuntimeException ex) {
-                    Utils.MessageDialog("Ошибка", "Ошибка времени выполнения",
-                            TranslateActivity.getInstance(), Utils.nullRunnable);
-                }*/
+
                 setTranslationActive(false);
             }
         }).start();
-    }
-
-    // TODO может быть, и не нужно
-    protected static String identifyLanguage(String phrase) {
-        try {
-            String url = String.format(DETECT_LANGUAGE_QUERY,
-                    URLEncoder.encode(phrase, "UTF-8"));
-            String response = loadStringFromUrl(url);
-            JSONObject jsonResponse = new JSONObject(response);
-            return jsonResponse.getString("lang");
-        } catch (IOException | JSONException e) {
-            Utils.MessageDialog("Ошибка связи", "Ошибка получения данных с сайта yandex",
-                    TranslateActivity.getInstance(), Utils.nullRunnable);
-        }
-        return "en";
     }
 
     /**
@@ -155,7 +160,7 @@ public class YandexRequests {
      * @return - строка-ответ
      * @throws IOException - если ответ не 200, содержит код HTTP-ответа
      */
-    private static String loadStringFromUrl(String url) throws IOException {
+    public static String loadStringFromUrl(String url) throws IOException {
         URL getLangsUrl = new URL(url);
         HttpsURLConnection connection = (HttpsURLConnection) getLangsUrl.openConnection();
         connection.connect();

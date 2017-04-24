@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import mobi.ja.ru.translator.Config;
 
 /**
- * Created by Serg on 23.04.2017.
+ * DAO для класса Config
  */
 public class ConfigDAO extends BaseDaoImpl<Config, Integer> {
     protected ConfigDAO(ConnectionSource connectionSource,

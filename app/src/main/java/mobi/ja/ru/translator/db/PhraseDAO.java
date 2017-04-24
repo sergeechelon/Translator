@@ -9,7 +9,7 @@ import java.util.List;
 import mobi.ja.ru.translator.Utils;
 
 /**
- * Created by Serg on 23.04.2017.
+ * DAO для доступа к таблице с PhraseWithTranslation
  */
 public class PhraseDAO extends BaseDaoImpl<PhraseWithTranslation, Integer> {
     protected PhraseDAO(ConnectionSource connectionSource,

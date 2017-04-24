@@ -25,15 +25,27 @@ import mobi.ja.ru.translator.db.PhraseWithTranslation;
 
 /**
  * acitvity для списка с историей или с избранным
+ * Тип функционирования определяется extra "workType"
+ * В обоих случаях формируется кастомный лист с исходной фразой и переводом,
+ * при нажатии на который фраза ListPhrasesActivity закрывается
+ * и фраза с переводом выдаются на основном TranslateActivity.
+ * В случае LISTTYPE_HISTORY (история переводов) скрывается кнопка единичного удаления
+ * и показывается кнопка очистки истории
  */
 public class ListPhrasesActivity extends AppCompatActivity {
 
+    /**
+     * Флаг запуска списка избранного
+     */
     public static final int LISTTYPE_FAVORITES = 0;
+    /**
+     * флаг запуска списка истории
+     */
     public static final int LISTTYPE_HISTORY = 1;
 
     private int listType;
 
-    private TextView titleView;
+    private TextView titleText;
     private ListView phrasesList;
 
     private Button clearHistoryBtn;
@@ -54,7 +66,7 @@ public class ListPhrasesActivity extends AppCompatActivity {
 
     private void initClearHistory() {
         clearHistoryBtn = (Button) findViewById(R.id.listPhrasesHistoryClean);
-        if(listType == LISTTYPE_FAVORITES) {
+        if(listType == LISTTYPE_FAVORITES) { // убираем кнопку очистки истории в случае списка избранного
             clearHistoryBtn.setVisibility(View.GONE);
             return;
         }
@@ -67,8 +79,10 @@ public class ListPhrasesActivity extends AppCompatActivity {
                             public void run() {
                                 try {
                                     PhraseDAO phraseDAO = DbFactory.getHelper().getPhraseDAO();
+                                    // убираем флаг inHistory
                                     phraseDAO.updateBuilder().updateColumnValue("inHistory", false).update();
                                     DeleteBuilder deleteUnused = phraseDAO.deleteBuilder();
+                                    // удаляем все, что не в избранном
                                     deleteUnused.where().eq("inFavorites", false);
                                     deleteUnused.delete();
                                     ListPhrasesActivity.this.recreate();
@@ -82,17 +96,16 @@ public class ListPhrasesActivity extends AppCompatActivity {
     }
 
     private void initTitle() {
-        titleView = (TextView) findViewById(R.id.listPhrasesTitle);
+        titleText = (TextView) findViewById(R.id.listPhrasesTitle);
 
         if(listType == LISTTYPE_FAVORITES)
-            titleView.setText("Избранное");
+            titleText.setText("Избранное");
         else if(listType == LISTTYPE_HISTORY)
-            titleView.setText("История");
+            titleText.setText("История");
     }
 
     private void initList() {
         phrasesList = (ListView) findViewById(R.id.listPhrasesList);
-
 
         List<PhraseWithTranslation> phrasesArray = null;
         try {
@@ -107,7 +120,7 @@ public class ListPhrasesActivity extends AppCompatActivity {
             finish();
         }
 
-        phraseAdapter = new PhraseAdapter(this, phrasesArray, phrasesList);
+        phraseAdapter = new PhraseAdapter(this, phrasesArray);
 
         phrasesList.setAdapter(phraseAdapter);
 
@@ -118,6 +131,9 @@ public class ListPhrasesActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * обработчик нажатия на элемент списка истории/избранного
+     */
     private class ChooseAndCloseListener implements View.OnClickListener {
         private int position;
         public ChooseAndCloseListener(int position){
@@ -126,14 +142,19 @@ public class ListPhrasesActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             PhraseWithTranslation item = phraseAdapter.getItem(position);
+            // изменяем настройки
             TranslateActivity.getInstance().setPhrase(item.getPhrase());
             TranslateActivity.getInstance().setTranslatedText(item.getTranslatedText());
+            // изменяем текст на главном активити
             Config.getConfig().setLangFrom(item.getLangFrom());
             Config.getConfig().setLangTo(item.getLangTo());
             ListPhrasesActivity.this.finish();
         }
     };
 
+    /**
+     * обработчик нажатия кнопки удаления из избранного
+     */
     private class DeleteListener implements View.OnClickListener {
         private int position;
         public DeleteListener(int position) {
@@ -158,36 +179,40 @@ public class ListPhrasesActivity extends AppCompatActivity {
         }
     }
 
-    private class PhraseAdapter extends ArrayAdapter<PhraseWithTranslation> {
-        ListView parentView;
-        public PhraseAdapter(Context context, List<PhraseWithTranslation> phrases, ListView parentView) {
-            super(context, R.layout.list_row, phrases);
-            this.parentView = parentView;
-        }
 
+    /**
+     * адаптер между списком фраз с переводами и кастомным листом
+     */
+    private class PhraseAdapter extends ArrayAdapter<PhraseWithTranslation> {
+        public PhraseAdapter(Context context, List<PhraseWithTranslation> phrases) {
+            super(context, R.layout.list_row, phrases);
+         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             PhraseWithTranslation phrase = getItem(position);
 
-            if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).
-                        inflate(R.layout.list_row, null);
-            }
+            if (convertView == null)
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_row, null);
+
             TextView phraseView = ((TextView) convertView.findViewById(R.id.listRowPhrase));
             TextView translationView = ((TextView) convertView.findViewById(R.id.listRowTranslation));
 
+            // создаем обработчик нажатия на элемент списка
             ChooseAndCloseListener chooseAndCloseListener = new ChooseAndCloseListener(position);
 
+            // устанавливаем на оба элемента
             phraseView.setText("(" + phrase.getLangFrom() + ") " + phrase.getPhrase());
             phraseView.setOnClickListener(chooseAndCloseListener);
             translationView.setText("(" + phrase.getLangTo() + ") " + phrase.getTranslatedText());
             translationView.setOnClickListener(chooseAndCloseListener);
 
             if(listType == LISTTYPE_FAVORITES)
-            ((ImageButton) convertView.findViewById(R.id.listGarbageBtn)).
-                    setOnClickListener(new DeleteListener(position));
+                // скрытие кнопки удаления для истории
+                ((ImageButton) convertView.findViewById(R.id.listGarbageBtn)).
+                        setOnClickListener(new DeleteListener(position));
             else if(listType == LISTTYPE_HISTORY)
+                // или установка обработчика нажатия кнопки удаления для избранного
                 ((ImageButton) convertView.findViewById(R.id.listGarbageBtn)).setVisibility(View.INVISIBLE);
 
             return convertView;

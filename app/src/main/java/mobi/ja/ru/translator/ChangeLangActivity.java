@@ -15,7 +15,8 @@ import org.json.JSONObject;
 import java.util.Map;
 
 /**
- * activity для выбора языка, на который переводить
+ * activity для выбора языка, на который переводить. Выводит список возможных для перевода языков
+ * и позволяет выбрать один из них, заменяя его в настройках.
  */
 public class ChangeLangActivity extends AppCompatActivity {
     private ChangeLangActivity instance;
@@ -70,10 +71,4 @@ public class ChangeLangActivity extends AppCompatActivity {
         arr[i] = arr[j];
         arr[j] = tmp;
     }
-
-
-    public ChangeLangActivity getInstance() {
-        return instance;
-    }
-
 }
