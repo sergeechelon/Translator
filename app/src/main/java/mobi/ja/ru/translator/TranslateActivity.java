@@ -6,7 +6,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -31,6 +30,9 @@ import mobi.ja.ru.translator.db.PhraseWithTranslation;
  * @historyButton - вызывает активити со списком истории переводов
  */
 public class TranslateActivity extends AppCompatActivity {
+    /**
+     * время задержки между вводом последней буквы и запросом на перевод
+     */
     private static final long WAIT_INPUT = 1500;
 
     private WebView translated;
@@ -81,6 +83,10 @@ public class TranslateActivity extends AppCompatActivity {
      */
     public void setPhrase(String text) {
         phrase.setText(text);
+    }
+
+    public String getPhrase() {
+        return phrase.getText().toString();
     }
 
     /**
@@ -208,7 +214,7 @@ public class TranslateActivity extends AppCompatActivity {
         public void afterTextChanged(Editable s) {
             /**
              * Запуск обработки ввода с задержкой @WAIT_INPUT, чтобы с вводом очередной
-             * промежуточной буквы не вызывался вызов перевода
+             * промежуточной буквы не осуществлялся запрос перевода
              */
             setTranslationFinished(false);
             translationHandler.removeCallbacks(translationTask);
